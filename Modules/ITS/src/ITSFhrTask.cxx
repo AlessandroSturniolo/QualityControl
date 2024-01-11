@@ -178,7 +178,7 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
         }
       }
     }
-    // define the hitnumber and occupancy array
+    // define the hitnumber and occupancy array; initialize to zero the number of active chips per stave
     if (mLayer < NLayerIB) {
       for (int istave = 0; istave < NStaves[mLayer]; istave++) {
         mHitnumberLane[istave] = new int[nChipsPerHic[mLayer]];
@@ -191,6 +191,7 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
         for (int ihic = 0; ihic < nHicPerStave[mLayer]; ihic++) {
           mHitPixelID_InStave[istave][ihic] = new std::unordered_map<unsigned int, int>[nChipsPerHic[mLayer]];
         }
+        mActiveChips[istave] = 0;
         for (int ichip = 0; ichip < nChipsPerHic[mLayer]; ichip++) {
           mHitnumberLane[istave][ichip] = 0;
           mOccupancyLane[istave][ichip] = 0;
@@ -214,6 +215,7 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
         for (int ihic = 0; ihic < nHicPerStave[mLayer]; ihic++) {
           mHitPixelID_InStave[istave][ihic] = new std::unordered_map<unsigned int, int>[nChipsPerHic[mLayer]];
         }
+        mActiveChips[istave] = 0;
         for (int ichip = 0; ichip < nHicPerStave[mLayer] * nChipsPerHic[mLayer]; ichip++) {
           mChipPhi[istave][ichip] = 0;
           mChipZ[istave][ichip] = 0;
@@ -462,6 +464,7 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
           hic = 0;
           mHitnumberLane[stave][chip]++;
           mChipStat[stave][chip]++;
+          mActiveChips[stave]++;
         } else {
           stave = (mChipDataBuffer->getChipID() - ChipBoundary[mLayer]) / (14 * nHicPerStave[mLayer]);
           int chipIdLocal = (mChipDataBuffer->getChipID() - ChipBoundary[mLayer]) % (14 * nHicPerStave[mLayer]);
@@ -471,6 +474,7 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
 
           mHitnumberLane[stave][lane]++;
           mChipStat[stave][chipIdLocal]++;
+          mActiveChips[stave]++;
         }
         digVec[stave][hic].emplace_back(mChipDataBuffer->getChipID(), pixel.getRow(), pixel.getCol());
       }
