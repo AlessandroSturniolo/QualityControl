@@ -147,6 +147,7 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
           }
         }
         mGeneralOccupancy->AddBin(4, px, py);
+        mEmptyLanesFraction->AddBin(4, px, py);
         mGeneralNoisyPixel->AddBin(4, px, py);
       }
     }
@@ -709,6 +710,7 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
         }
       }
       mGeneralOccupancy->SetBinContent(istave + 1 + StaveBoundary[mLayer], *(std::max_element(mOccupancyLane[istave], mOccupancyLane[istave] + nHicPerStave[mLayer] * 2)));
+      mEmptyLanesFraction->SetBinContent(istave + 1 + StaveBoundary[mLayer], 1 - mActiveChips[istave]/(nChipsPerHic[mLayer]*nHicPerStave[mLayer]));
       mGeneralNoisyPixel->SetBinContent(istave + 1 + StaveBoundary[mLayer], mNoisyPixelNumber[mLayer][istave]);
     }
   }
@@ -800,6 +802,7 @@ void ITSFhrTask::reset()
   resetGeneralPlots();
   resetOccupancyPlots();
   mGeneralOccupancy->Reset("content");
+  mEmptyLanesFraction->Reset("content");
   mGeneralNoisyPixel->Reset("content");
   mDecoder->clearStat();
 
