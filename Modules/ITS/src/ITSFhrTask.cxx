@@ -98,8 +98,8 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
   mGeneralOccupancy->SetMaximum(pow(10, mMaxGeneralAxisRange));
 
   mEmptyLanesFraction = new TH2Poly();
-  mEmptyLanesFraction->SetTitle("Fraction of Active Lanes;mm (IB 3x);mm (IB 3x)");
-  mEmptyLanesFraction->SetName("General/ActiveLanes_Fraction");
+  mEmptyLanesFraction->SetTitle("Fraction of Empty Lanes;mm (IB 3x);mm (IB 3x)");
+  mEmptyLanesFraction->SetName("General/EmptyLanes_Fraction");
   mEmptyLanesFraction->SetStats(0);
   mEmptyLanesFraction->SetMinimum(0.);
   mEmptyLanesFraction->SetMaximum(1.);
