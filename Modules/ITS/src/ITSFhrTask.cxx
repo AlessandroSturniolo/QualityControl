@@ -153,6 +153,9 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
     if (mGeneralOccupancy) {
       getObjectsManager()->startPublishing(mGeneralOccupancy);
     }
+    if (mEmptyLanesFraction) {
+      getObjectsManager()->startPublishing(mEmptyLanesFraction);
+    }
     if (mGeneralNoisyPixel) {
       getObjectsManager()->startPublishing(mGeneralNoisyPixel);
     }
