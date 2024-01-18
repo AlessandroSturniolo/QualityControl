@@ -44,7 +44,7 @@ ITSFhrTask::ITSFhrTask()
 ITSFhrTask::~ITSFhrTask()
 {
   delete mGeneralOccupancy;
-  delete mActiveLanesFraction;
+  delete mEmptyLanesFraction;
   delete mGeneralNoisyPixel;
   delete mDecoder;
   delete mChipDataBuffer;
@@ -97,12 +97,12 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
   mGeneralOccupancy->SetMinimum(pow(10, mMinGeneralAxisRange));
   mGeneralOccupancy->SetMaximum(pow(10, mMaxGeneralAxisRange));
 
-  mActiveLanesFraction = new TH2Poly();
-  mActiveLanesFraction->SetTitle("Fraction of Active Lanes;mm (IB 3x);mm (IB 3x)");
-  mActiveLanesFraction->SetName("General/ActiveLanes_Fraction");
-  mActiveLanesFraction->SetStats(0);
-  mActiveLanesFraction->SetMinimum(0.);
-  mActiveLanesFraction->SetMaximum(1.);
+  mEmptyLanesFraction = new TH2Poly();
+  mEmptyLanesFraction->SetTitle("Fraction of Active Lanes;mm (IB 3x);mm (IB 3x)");
+  mEmptyLanesFraction->SetName("General/ActiveLanes_Fraction");
+  mEmptyLanesFraction->SetStats(0);
+  mEmptyLanesFraction->SetMinimum(0.);
+  mEmptyLanesFraction->SetMaximum(1.);
 
   mGeneralNoisyPixel = new TH2Poly();
   mGeneralNoisyPixel->SetTitle("Noisy Pixel Number;mm (IB 3x);mm (IB 3x)");
@@ -678,6 +678,7 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
         }
       }
       mGeneralOccupancy->SetBinContent(istave + 1 + StaveBoundary[mLayer], *(std::max_element(mOccupancyLane[istave], mOccupancyLane[istave] + nChipsPerHic[mLayer])));
+      mEmptyLanesFraction->SetBinContent(istave + 1 + StaveBoundary[mLayer], 1 - mActiveChips[istave]/(nChipsPerHic[mLayer]*nHicPerStave[mLayer]));
       mGeneralNoisyPixel->SetBinContent(istave + 1 + StaveBoundary[mLayer], mNoisyPixelNumber[mLayer][istave]);
     } else {
       for (int ichip = 0; ichip < nHicPerStave[mLayer] * nChipsPerHic[mLayer]; ichip++) {

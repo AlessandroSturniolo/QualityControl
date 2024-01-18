@@ -115,6 +115,7 @@ class ITSFhrTask final : public TaskInterface
   double** mChipZ /* = new double*[NStaves[lay]]*/;         // IB/OB : mChipZ[Stave][chip]
 
   int** mChipStat /* = new double*[NStaves[lay]]*/; // IB/OB : mChipStat[Stave][chip]
+  int* mActiveChips /* = new int[NStaves[lay]]*/;
   int mNoisyPixelNumber[7][48] = { { 0 } };
 
   int mMaxGeneralAxisRange = -3;  // the range of TH2Poly plots z axis range, pow(10, mMinGeneralAxisRange) ~ pow(10, mMaxGeneralAxisRange)
@@ -131,6 +132,7 @@ class ITSFhrTask final : public TaskInterface
   TH1D* mErrorPlots;
   TH2I* mErrorVsFeeid;
   TH2Poly* mGeneralOccupancy;  // Max Occuapncy(chip/hic) in one stave
+  TH2Poly* mEmptyLanesFraction;
   TH2Poly* mGeneralNoisyPixel; // Noisy pixel number in one stave
 
   // Occupancy and hit-map
