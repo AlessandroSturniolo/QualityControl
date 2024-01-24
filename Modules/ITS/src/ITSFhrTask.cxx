@@ -426,10 +426,12 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
   if (mLayer < NLayerIB) {
     for (int istave = 0; istave < NStaves[mLayer]; istave++) {
       digVec[istave] = new std::vector<Digit>[nHicPerStave[mLayer]];
+      mActiveChips[istave] = 0;
     }
   } else {
     for (int istave = 0; istave < NStaves[mLayer]; istave++) {
       digVec[istave] = new std::vector<Digit>[nHicPerStave[mLayer]];
+      mActiveChips[istave] = 0;
     }
   }
 
