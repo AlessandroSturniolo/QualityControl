@@ -471,6 +471,7 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
           mHitnumberLane[stave][chip]++;
           mChipStat[stave][chip]++;
           mActiveChips[stave]++;
+          LOG(INFO) << "Layer: " << mLayer << "\t Stave: " << stave << "\t Number of active chips: " << mActiveChips[stave];
         } else {
           stave = (mChipDataBuffer->getChipID() - ChipBoundary[mLayer]) / (14 * nHicPerStave[mLayer]);
           int chipIdLocal = (mChipDataBuffer->getChipID() - ChipBoundary[mLayer]) % (14 * nHicPerStave[mLayer]);
@@ -481,6 +482,7 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
           mHitnumberLane[stave][lane]++;
           mChipStat[stave][chipIdLocal]++;
           mActiveChips[stave]++;
+          LOG(INFO) << "Layer: " << mLayer << "\t Stave: " << stave << "\t Number of active chips: " << mActiveChips[stave];
         }
         digVec[stave][hic].emplace_back(mChipDataBuffer->getChipID(), pixel.getRow(), pixel.getCol());
       }
