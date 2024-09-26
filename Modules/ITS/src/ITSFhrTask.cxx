@@ -44,6 +44,7 @@ ITSFhrTask::ITSFhrTask()
 ITSFhrTask::~ITSFhrTask()
 {
   delete mGeneralOccupancy;
+  delete mEmptyLanesFraction;
   delete mGeneralNoisyPixel;
   delete mDecoder;
   delete mChipDataBuffer;
@@ -82,6 +83,7 @@ ITSFhrTask::~ITSFhrTask()
   delete[] mChipStat;
   delete[] mErrorCount;
   delete[] mHitPixelID_InStave;
+  delete[] mActiveChips;
 }
 
 void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
@@ -94,6 +96,13 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
   mGeneralOccupancy->SetStats(0);
   mGeneralOccupancy->SetMinimum(pow(10, mMinGeneralAxisRange));
   mGeneralOccupancy->SetMaximum(pow(10, mMaxGeneralAxisRange));
+
+  mEmptyLanesFraction = new TH2Poly();
+  mEmptyLanesFraction->SetTitle("Fraction of Empty Lanes;mm (IB 3x);mm (IB 3x)");
+  mEmptyLanesFraction->SetName("General/EmptyLanes_Fraction");
+  mEmptyLanesFraction->SetStats(0);
+  mEmptyLanesFraction->SetMinimum(0.);
+  mEmptyLanesFraction->SetMaximum(1.);
 
   mGeneralNoisyPixel = new TH2Poly();
   mGeneralNoisyPixel->SetTitle("Noisy Pixel Number;mm (IB 3x);mm (IB 3x)");
@@ -124,6 +133,8 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
     mChipStat = new int*[NStaves[mLayer]];
     mErrorCount = new int**[NStaves[mLayer]];
 
+    mActiveChips = new int[NStaves[mLayer]];
+
     for (int ilayer = 0; ilayer < 7; ilayer++) {
       for (int istave = 0; istave < NStaves[ilayer]; istave++) {
         double* px = new double[4];
@@ -136,11 +147,15 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
           }
         }
         mGeneralOccupancy->AddBin(4, px, py);
+        mEmptyLanesFraction->AddBin(4, px, py);
         mGeneralNoisyPixel->AddBin(4, px, py);
       }
     }
     if (mGeneralOccupancy) {
       getObjectsManager()->startPublishing(mGeneralOccupancy);
+    }
+    if (mEmptyLanesFraction) {
+      getObjectsManager()->startPublishing(mEmptyLanesFraction);
     }
     if (mGeneralNoisyPixel) {
       getObjectsManager()->startPublishing(mGeneralNoisyPixel);
@@ -167,7 +182,7 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
         }
       }
     }
-    // define the hitnumber and occupancy array
+    // define the hitnumber and occupancy array; initialize to zero the number of active chips per stave
     if (mLayer < NLayerIB) {
       for (int istave = 0; istave < NStaves[mLayer]; istave++) {
         mHitnumberLane[istave] = new int[nChipsPerHic[mLayer]];
@@ -180,6 +195,7 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
         for (int ihic = 0; ihic < nHicPerStave[mLayer]; ihic++) {
           mHitPixelID_InStave[istave][ihic] = new std::unordered_map<unsigned int, int>[nChipsPerHic[mLayer]];
         }
+        mActiveChips[istave] = 0;
         for (int ichip = 0; ichip < nChipsPerHic[mLayer]; ichip++) {
           mHitnumberLane[istave][ichip] = 0;
           mOccupancyLane[istave][ichip] = 0;
@@ -203,6 +219,7 @@ void ITSFhrTask::initialize(o2::framework::InitContext& /*ctx*/)
         for (int ihic = 0; ihic < nHicPerStave[mLayer]; ihic++) {
           mHitPixelID_InStave[istave][ihic] = new std::unordered_map<unsigned int, int>[nChipsPerHic[mLayer]];
         }
+        mActiveChips[istave] = 0;
         for (int ichip = 0; ichip < nHicPerStave[mLayer] * nChipsPerHic[mLayer]; ichip++) {
           mChipPhi[istave][ichip] = 0;
           mChipZ[istave][ichip] = 0;
@@ -409,10 +426,12 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
   if (mLayer < NLayerIB) {
     for (int istave = 0; istave < NStaves[mLayer]; istave++) {
       digVec[istave] = new std::vector<Digit>[nHicPerStave[mLayer]];
+      mActiveChips[istave] = 0;
     }
   } else {
     for (int istave = 0; istave < NStaves[mLayer]; istave++) {
       digVec[istave] = new std::vector<Digit>[nHicPerStave[mLayer]];
+      mActiveChips[istave] = 0;
     }
   }
 
@@ -451,6 +470,8 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
           hic = 0;
           mHitnumberLane[stave][chip]++;
           mChipStat[stave][chip]++;
+          mActiveChips[stave]++;
+          LOG(INFO) << "Layer: " << mLayer << "\t Stave: " << stave << "\t Number of active chips: " << mActiveChips[stave];
         } else {
           stave = (mChipDataBuffer->getChipID() - ChipBoundary[mLayer]) / (14 * nHicPerStave[mLayer]);
           int chipIdLocal = (mChipDataBuffer->getChipID() - ChipBoundary[mLayer]) % (14 * nHicPerStave[mLayer]);
@@ -460,6 +481,8 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
 
           mHitnumberLane[stave][lane]++;
           mChipStat[stave][chipIdLocal]++;
+          mActiveChips[stave]++;
+          LOG(INFO) << "Layer: " << mLayer << "\t Stave: " << stave << "\t Number of active chips: " << mActiveChips[stave];
         }
         digVec[stave][hic].emplace_back(mChipDataBuffer->getChipID(), pixel.getRow(), pixel.getCol());
       }
@@ -663,6 +686,7 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
         }
       }
       mGeneralOccupancy->SetBinContent(istave + 1 + StaveBoundary[mLayer], *(std::max_element(mOccupancyLane[istave], mOccupancyLane[istave] + nChipsPerHic[mLayer])));
+      mEmptyLanesFraction->SetBinContent(istave + 1 + StaveBoundary[mLayer], 1 - mActiveChips[istave]/(nChipsPerHic[mLayer]*nHicPerStave[mLayer]));
       mGeneralNoisyPixel->SetBinContent(istave + 1 + StaveBoundary[mLayer], mNoisyPixelNumber[mLayer][istave]);
     } else {
       for (int ichip = 0; ichip < nHicPerStave[mLayer] * nChipsPerHic[mLayer]; ichip++) {
@@ -690,6 +714,7 @@ void ITSFhrTask::monitorData(o2::framework::ProcessingContext& ctx)
         }
       }
       mGeneralOccupancy->SetBinContent(istave + 1 + StaveBoundary[mLayer], *(std::max_element(mOccupancyLane[istave], mOccupancyLane[istave] + nHicPerStave[mLayer] * 2)));
+      mEmptyLanesFraction->SetBinContent(istave + 1 + StaveBoundary[mLayer], 1 - mActiveChips[istave]/(nChipsPerHic[mLayer]*nHicPerStave[mLayer]));
       mGeneralNoisyPixel->SetBinContent(istave + 1 + StaveBoundary[mLayer], mNoisyPixelNumber[mLayer][istave]);
     }
   }
@@ -781,6 +806,7 @@ void ITSFhrTask::reset()
   resetGeneralPlots();
   resetOccupancyPlots();
   mGeneralOccupancy->Reset("content");
+  mEmptyLanesFraction->Reset("content");
   mGeneralNoisyPixel->Reset("content");
   mDecoder->clearStat();
 
